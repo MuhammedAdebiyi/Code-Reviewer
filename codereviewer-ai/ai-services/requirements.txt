@@ -1,0 +1,30 @@
+# FastAPI and ASGI server
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart==0.0.6
+
+# HTTP requests
+requests
+httpx
+
+# Environment variables
+python-dotenv
+
+# Code analysis tools
+ast-comments
+radon  # Complexity metrics
+bandit  # Security checks
+
+# Optional: Advanced parsing
+# tree-sitter==0.20.4  # Multi-language parsing (if needed)
+
+# Testing
+pytest
+pytest-asyncio
+pytest-cov
+
+# Development
+black # Code formatting
+flake8 # Linting
+mypy  # Type checking
