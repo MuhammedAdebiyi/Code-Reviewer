@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: codereviewer-db
+    environment:
+      POSTGRES_DB: codereviewer
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-yourpassword}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Python AI Service
+  ai-service:
+    build:
+      context: ./ai-services
+      dockerfile: Dockerfile
+    container_name: codereviewer-ai
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: gemini-3-flash-preview
+      PORT: 8000
+      ENVIRONMENT: production
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ASP.NET Core Backend
+  backend:
+    build:
+      context: ./backend/CodeReviewer.Api
+      dockerfile: Dockerfile
+    container_name: codereviewer-backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:80
+      ConnectionStrings__DefaultConnection: "Host=postgres;Database=codereviewer;Username=postgres;Password=${DB_PASSWORD:-yourpassword}"
+      Jwt__Secret: ${JWT_SECRET}
+      Services__AiService: http://ai-service:8000
+      GitHub__ClientId: ${GITHUB_CLIENT_ID}
+      GitHub__ClientSecret: ${GITHUB_CLIENT_SECRET}
+      GitHub__CallbackUrl: ${GITHUB_CALLBACK_URL:-http://localhost:5000/api/auth/github/callback}
+    ports:
+      - "5000:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+    restart: unless-stopped
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: codereviewer-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
+      NEXT_PUBLIC_GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local

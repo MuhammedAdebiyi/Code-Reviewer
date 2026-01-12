@@ -140,7 +140,7 @@ public class ReviewService : IReviewService
             var result = JsonSerializer.Deserialize<JsonElement>(jsonString);
 
             // Extract issues from the response
-            if (result.TryGetProperty("issues", out var issuesArray))
+            if (result.TryGetProperty("issues", out JsonElement issuesArray))
             {
                 foreach (var issue in issuesArray.EnumerateArray())
                 {

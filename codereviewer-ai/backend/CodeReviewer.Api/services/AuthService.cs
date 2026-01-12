@@ -14,6 +14,7 @@ public interface IAuthService
     Task<AuthResponse> LoginAsync(string email, string password);
     Task<AuthResponse> RefreshTokenAsync(string refreshToken);
     Task<UserDto?> GetUserByIdAsync(Guid userId);
+    Task<AuthResponse> RegisterOrLoginWithGitHub(string email, string name, string avatarUrl);
 }
 
 public class AuthService : IAuthService
@@ -147,6 +148,51 @@ public class AuthService : IAuthService
     {
         var user = await _context.Users.FindAsync(userId);
         return user != null ? MapToUserDto(user) : null;
+    }
+
+    public async Task<AuthResponse> RegisterOrLoginWithGitHub(string email, string name, string avatarUrl)
+    {
+        try
+        {
+            // Check if user exists
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (user == null)
+            {
+                // Register new user
+                user = new User
+                {
+                    Email = email,
+                    PasswordHash = "", // No password for OAuth users
+                    ApiKey = GenerateApiKey(),
+                    Plan = "free",
+                    ReviewsRemaining = 10
+                };
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+            }
+
+            // Generate token
+            var token = GenerateJwtToken(user);
+
+            return new AuthResponse
+            {
+                Success = true,
+                Message = "Authentication successful",
+                Token = token,
+                User = MapToUserDto(user)
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GitHub OAuth failed");
+            return new AuthResponse
+            {
+                Success = false,
+                Message = "Authentication failed"
+            };
+        }
     }
 
     private string GenerateJwtToken(User user)
