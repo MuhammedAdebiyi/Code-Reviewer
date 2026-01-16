@@ -1,20 +1,37 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  /* Custom colors */
+  --color-border: 217 33% 17%;
+  --color-input: 217 33% 17%;
+  --color-ring: 224 71% 4%;
+  --color-background: 0 0% 0%;
+  --color-foreground: 0 0% 100%;
+
+  /* Animations */
+  --animate-fadeIn: fadeIn 0.4s ease-out;
+  --animate-slideIn: slideIn 0.5s ease-out;
+  --animate-subtlePulse: subtlePulse 2s ease-in-out infinite;
+  --animate-slideUp: slideUp 0.5s ease-out;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+}
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(217 33% 17%);
   }
   
   body {
-    @apply bg-black text-white antialiased;
+    background-color: black;
+    color: white;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
 @layer utilities {
-  /* Fade in animation - smooth like pxxl */
+  /* Fade in animation */
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -48,6 +65,22 @@
     animation: slideIn 0.5s ease-out forwards;
   }
 
+  /* Slide up animation */
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slideUp {
+    animation: slideUp 0.5s ease-out forwards;
+  }
+
   /* Subtle pulse for active elements */
   @keyframes subtlePulse {
     0%, 100% {
@@ -60,6 +93,20 @@
 
   .animate-subtlePulse {
     animation: subtlePulse 2s ease-in-out infinite;
+  }
+
+  /* Glow animation */
+  @keyframes glow {
+    0% {
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    }
+    100% {
+      box-shadow: 0 0 40px rgba(59, 130, 246, 0.8);
+    }
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
   }
 
   /* Custom scrollbar - minimal */
@@ -83,7 +130,10 @@
 
   /* Text gradient */
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400;
+    background-image: linear-gradient(to right, rgb(96 165 250), rgb(192 132 252), rgb(244 114 182));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
   }
 
   /* Glass effect */
