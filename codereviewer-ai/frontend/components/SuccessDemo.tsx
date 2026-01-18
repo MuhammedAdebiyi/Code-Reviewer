@@ -1,4 +1,3 @@
-// frontend/components/SuccessDemo.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,7 +10,11 @@ interface LogEntry {
   icon?: React.ReactNode;
 }
 
-export default function SuccessDemo() {
+interface SuccessDemoProps {
+  isActive?: boolean;
+}
+
+export default function SuccessDemo({ isActive = true }: SuccessDemoProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
@@ -98,7 +101,7 @@ export default function SuccessDemo() {
   }, []);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || !isActive) return;
 
     if (currentIndex < demoLogs.length) {
       const timer = setTimeout(() => {
@@ -107,16 +110,9 @@ export default function SuccessDemo() {
       }, 350);
 
       return () => clearTimeout(timer);
-    } else {
-      const resetTimer = setTimeout(() => {
-        setLogs([]);
-        setCurrentIndex(0);
-      }, 3000);
-
-      return () => clearTimeout(resetTimer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, mounted]);
+  }, [currentIndex, mounted, isActive]);
 
   const getLogColor = (type: string) => {
     switch (type) {
@@ -171,8 +167,7 @@ export default function SuccessDemo() {
           {logs.map((log, index) => (
             <div
               key={index}
-              className={`flex items-start gap-2.5 ${getLogColor(log.type)} leading-relaxed animate-fadeIn`}
-              style={{ animationDelay: `${index * 0.03}s`, animationFillMode: 'forwards' }}
+              className={`flex items-start gap-2.5 ${getLogColor(log.type)} leading-relaxed animate-deploy-step`}
             >
               {log.icon && <span className="mt-0.5 opacity-70">{log.icon}</span>}
               <span className="text-gray-600 select-none font-mono shrink-0">{log.timestamp}</span>
@@ -181,8 +176,8 @@ export default function SuccessDemo() {
           ))}
           
           {/* Blinking Cursor */}
-          {currentIndex < demoLogs.length && (
-            <div className="flex items-center gap-2.5 mt-1">
+          {isActive && currentIndex < demoLogs.length && (
+            <div className="flex items-center gap-2.5 mt-1 animate-deploy-step">
               <span className="text-gray-600 font-mono">10:53:03.000</span>
               <div className="w-1.5 h-3.5 bg-green-500 animate-pulse"></div>
             </div>

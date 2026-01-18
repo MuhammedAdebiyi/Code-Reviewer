@@ -7,7 +7,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { reviewApi } from '@/lib/api';
 
-// Mock GitHub repos (in production, fetch from GitHub API)
+
 const mockRepos = [
   {
     id: 1,

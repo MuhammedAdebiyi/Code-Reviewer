@@ -49,13 +49,26 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Database
+// Database - Read from environment or config
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+{
+    // Fall back to environment variable
+    var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "codereviewer123";
+    connectionString = $"Host=localhost;Database=codereviewer;Username=postgres;Password={dbPassword}";
+}
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// JWT Authentication
-var jwtSecret = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");
+// JWT Authentication - Read from environment or config
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrEmpty(jwtSecret))
+{
+    jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") 
+        ?? throw new InvalidOperationException("JWT Secret not configured. Set JWT_SECRET environment variable.");
+}
+
 var jwtKey = Encoding.ASCII.GetBytes(jwtSecret);
 
 builder.Services.AddAuthentication(x =>
