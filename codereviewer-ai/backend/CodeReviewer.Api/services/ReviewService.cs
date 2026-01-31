@@ -67,7 +67,7 @@ public class ReviewService : IReviewService
 
         var issues = review.Results.Select(r => new IssueDto
         {
-            Id = r.Id.ToString(),
+            Id = r.Id,
             Type = r.IssueType,
             Severity = r.Severity,
             File = r.File,

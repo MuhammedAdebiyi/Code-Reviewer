@@ -20,14 +20,32 @@ public class User
     
     public int ReviewsRemaining { get; set; } = 10;
     
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    // Email Verification Fields
+    public bool IsEmailVerified { get; set; } = false;
+    public string? VerificationCode { get; set; }
+    public DateTime? VerificationCodeExpiry { get; set; }
+    public int VerificationAttempts { get; set; } = 0;
+    public DateTime? LastVerificationAttempt { get; set; }
     
+    // Password Reset Fields
+    public string? PasswordResetCode { get; set; }
+    public DateTime? PasswordResetCodeExpiry { get; set; }
+    public int PasswordResetAttempts { get; set; } = 0;
+    public DateTime? LastPasswordResetAttempt { get; set; }
+    
+    // Security Fields
+    public int FailedLoginAttempts { get; set; } = 0;
+    public DateTime? LockoutUntil { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+    
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     
     // Navigation property
     public ICollection<CodeReview> Reviews { get; set; } = new List<CodeReview>();
 }
 
+// Keep your other models the same...
 public class CodeReview
 {
     [Key]
@@ -40,7 +58,7 @@ public class CodeReview
     
     public string Language { get; set; } = string.Empty;
     
-    public string Status { get; set; } = "pending"; // pending, analyzing, completed, failed
+    public string Status { get; set; } = "pending";
     
     public int FilesCount { get; set; }
     
@@ -52,7 +70,6 @@ public class CodeReview
     
     public int GeminiTokensUsed { get; set; }
     
-    // Navigation properties
     public User User { get; set; } = null!;
     public ICollection<AnalysisResult> Results { get; set; } = new List<AnalysisResult>();
 }
@@ -65,9 +82,9 @@ public class AnalysisResult
     [Required]
     public Guid ReviewId { get; set; }
     
-    public string IssueType { get; set; } = string.Empty; // security, performance, quality, architecture
+    public string IssueType { get; set; } = string.Empty;
     
-    public string Severity { get; set; } = string.Empty; // critical, high, medium, low
+    public string Severity { get; set; } = string.Empty;
     
     public string Title { get; set; } = string.Empty;
     
@@ -85,7 +102,6 @@ public class AnalysisResult
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
-    // Navigation property
     public CodeReview Review { get; set; } = null!;
 }
 
@@ -101,14 +117,13 @@ public class ChatMessage
     public Guid UserId { get; set; }
     
     [Required]
-    public string Role { get; set; } = string.Empty; // user, assistant
+    public string Role { get; set; } = string.Empty;
     
     [Required]
     public string Message { get; set; } = string.Empty;
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
-    // Navigation properties
     public CodeReview Review { get; set; } = null!;
     public User User { get; set; } = null!;
 }

@@ -7,20 +7,19 @@ import type {
   SubmitReviewResponse 
 } from './types';
 
-// FIXED: Better environment variable handling
+
 const getApiUrl = () => {
   if (typeof window !== 'undefined') {
-    // Client-side: use the environment variable or default
+   
     return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
   }
-  // Server-side
+
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 };
 
 const API_URL = getApiUrl();
 
-console.log('API URL:', API_URL); // Debug log
-
+console.log('API URL:', API_URL); 
 const api = axios.create({
   baseURL: `${API_URL}/api`,
   headers: {
@@ -28,7 +27,7 @@ const api = axios.create({
   },
 });
 
-// Add auth token to requests
+
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token');
@@ -39,7 +38,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor for better error handling
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -54,7 +53,7 @@ api.interceptors.response.use(
   }
 );
 
-// Auth API
+
 export const authApi = {
   register: async (email: string, password: string): Promise<AuthResponse> => {
     try {
@@ -90,6 +89,27 @@ export const authApi = {
   githubCallback: async (code: string): Promise<AuthResponse> => {
     const response = await api.post('/auth/github/callback', { code });
     return response.data;
+  },
+
+  // Email Verification
+  verifyEmail: async (code: string): Promise<AuthResponse> => {
+    try {
+      const response = await api.post('/auth/verify-email', { code });
+      return response.data;
+    } catch (error: any) {
+      console.error('Verification error:', error.response?.data);
+      throw new Error(error.response?.data?.message || 'Verification failed');
+    }
+  },
+
+  resendVerificationCode: async (email: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const response = await api.post('/auth/resend-verification', { email });
+      return response.data;
+    } catch (error: any) {
+      console.error('Resend code error:', error.response?.data);
+      throw new Error(error.response?.data?.message || 'Failed to resend code');
+    }
   },
 };
 

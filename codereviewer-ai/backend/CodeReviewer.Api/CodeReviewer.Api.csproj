@@ -4,12 +4,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>aspnet-CodeReviewer-Api-12345</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Authentication & JWT -->
+    <!-- ASP.NET Core -->
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
     
     <!-- Entity Framework Core -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
@@ -19,14 +20,26 @@
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
     
-    <!-- Swagger/OpenAPI -->
+    <!-- Health Checks - FIXES CS1061 ERROR -->
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
+    <PackageReference Include="AspNetCore.HealthChecks.Uris" Version="9.0.0" />
+    
+    <!-- Swagger -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     
-    <!-- Password Hashing -->
+    <!-- Security -->
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     
-    <!-- HTTP Client -->
-    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+    <!-- Environment Variables -->
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
+    
+    <!-- Utilities -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    
+    <!-- Logging -->
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
   </ItemGroup>
 
 </Project>

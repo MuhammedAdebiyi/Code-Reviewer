@@ -7,11 +7,16 @@ public class ErrorHandlingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ErrorHandlingMiddleware> _logger;
+    private readonly IHostEnvironment _env;
 
-    public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
+    public ErrorHandlingMiddleware(
+        RequestDelegate next,
+        ILogger<ErrorHandlingMiddleware> logger,
+        IHostEnvironment env)
     {
         _next = next;
         _logger = logger;
+        _env = env;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -22,91 +27,71 @@ public class ErrorHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unhandled exception occurred");
+            _logger.LogError(ex, "❌ Unhandled exception occurred: {Message}", ex.Message);
             await HandleExceptionAsync(context, ex);
         }
     }
 
-    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-
-        var result = JsonSerializer.Serialize(new
+        
+        var response = new ErrorResponse
         {
-            message = "An error occurred processing your request",
-            details = exception.Message
+            Message = "An error occurred while processing your request.",
+            Timestamp = DateTime.UtcNow
+        };
+
+        switch (exception)
+        {
+            case UnauthorizedAccessException:
+                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                response.Message = "Unauthorized access.";
+                break;
+
+            case ArgumentException:
+                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.Message = exception.Message;
+                break;
+
+            case KeyNotFoundException:
+                context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                response.Message = "Resource not found.";
+                break;
+
+            case InvalidOperationException:
+                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.Message = exception.Message;
+                break;
+
+            default:
+                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                
+                // Only show detailed errors in development
+                if (_env.IsDevelopment())
+                {
+                    response.Message = exception.Message;
+                    response.StackTrace = exception.StackTrace;
+                }
+                else
+                {
+                    response.Message = "An internal server error occurred.";
+                }
+                break;
+        }
+
+        var result = JsonSerializer.Serialize(response, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
 
-        return context.Response.WriteAsync(result);
+        await context.Response.WriteAsync(result);
     }
 }
 
-public class RateLimitingMiddleware
+public class ErrorResponse
 {
-    private readonly RequestDelegate _next;
-    private readonly RateLimitingService _rateLimitingService;
-
-    public RateLimitingMiddleware(RequestDelegate next, RateLimitingService rateLimitingService)
-    {
-        _next = next;
-        _rateLimitingService = rateLimitingService;
-    }
-
-    public async Task InvokeAsync(HttpContext context)
-    {
-        var userId = context.User.FindFirst("userId")?.Value;
-        var identifier = userId ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-
-        if (!_rateLimitingService.IsAllowed(identifier))
-        {
-            context.Response.StatusCode = 429;
-            context.Response.ContentType = "application/json";
-            
-            await context.Response.WriteAsync(JsonSerializer.Serialize(new
-            {
-                message = "Rate limit exceeded. Please try again later."
-            }));
-            
-            return;
-        }
-
-        await _next(context);
-    }
-}
-
-public class RateLimitingService
-{
-    private readonly Dictionary<string, (int count, DateTime resetTime)> _requests = new();
-    private readonly int _maxRequests = 100;
-    private readonly TimeSpan _timeWindow = TimeSpan.FromHours(1);
-
-    public bool IsAllowed(string identifier)
-    {
-        lock (_requests)
-        {
-            var now = DateTime.UtcNow;
-
-            if (_requests.TryGetValue(identifier, out var record))
-            {
-                if (now > record.resetTime)
-                {
-                    // Reset the window
-                    _requests[identifier] = (1, now.Add(_timeWindow));
-                    return true;
-                }
-
-                if (record.count >= _maxRequests)
-                {
-                    return false;
-                }
-
-                _requests[identifier] = (record.count + 1, record.resetTime);
-                return true;
-            }
-
-            _requests[identifier] = (1, now.Add(_timeWindow));
-            return true;
-        }
-    }
+    public string Message { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; }
+    public string? StackTrace { get; set; }
 }

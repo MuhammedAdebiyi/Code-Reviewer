@@ -1,83 +1,190 @@
 version: '3.8'
 
 services:
+
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
     container_name: codereviewer-db
     environment:
-      POSTGRES_DB: codereviewer
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: codereviewer123
+      POSTGRES_DB: ${DB_NAME:-codereviewer}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-codereviewer123}
     ports:
-      - "5433:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backend/init-scripts:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - codereviewer-network
+    restart: unless-stopped
 
+  
   # Python AI Service
+  
   ai-service:
     build:
       context: ./ai-services
       dockerfile: Dockerfile
     container_name: codereviewer-ai
     environment:
+      # Gemini API Configuration
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-      GEMINI_MODEL: gemini-3-flash-preview
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3-flash-preview}
+      
+      # Service Configuration
       PORT: 8000
-      ENVIRONMENT: production
+      ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-production}
+      
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     ports:
       - "8000:8000"
-    restart: unless-stopped
+    volumes:
+      - ./ai-services:/app
+      - ai-cache:/app/cache
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
+    networks:
+      - codereviewer-network
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
 
-  # ASP.NET Core Backend
+  
+  # ASP.NET Core Backend API
+  
   backend:
     build:
-      context: ./backend/CodeReviewer.Api
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: CodeReviewer.Api/Dockerfile
     container_name: codereviewer-backend
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      # ASP.NET Core Configuration
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: http://+:80
-      ConnectionStrings__DefaultConnection: "Host=postgres;Database=codereviewer;Username=postgres;Password=${DB_PASSWORD:-yourpassword}"
+      
+      # Database Configuration
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${DB_NAME:-codereviewer};Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-codereviewer123}"
+      
+      # JWT Configuration
       Jwt__Secret: ${JWT_SECRET}
+      Jwt__Issuer: ${JWT_ISSUER:-CodeReviewer.Api}
+      Jwt__Audience: ${JWT_AUDIENCE:-CodeReviewer.Client}
+      Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
+      
+      # Service URLs
       Services__AiService: http://ai-service:8000
+      
+      # GitHub OAuth
       GitHub__ClientId: ${GITHUB_CLIENT_ID}
       GitHub__ClientSecret: ${GITHUB_CLIENT_SECRET}
       GitHub__CallbackUrl: ${GITHUB_CALLBACK_URL:-http://localhost:5000/api/auth/github/callback}
+      
+      # Email Configuration
+      Email__SmtpHost: ${SMTP_HOST}
+      Email__SmtpPort: ${SMTP_PORT:-587}
+      Email__SmtpUser: ${SMTP_USER}
+      Email__SmtpPassword: ${SMTP_PASSWORD}
+      Email__FromEmail: ${FROM_EMAIL:-noreply@codereviewer.ai}
+      Email__FromName: ${FROM_NAME:-CodeReviewer AI}
+      
+      # CORS Configuration
+      Cors__AllowedOrigins: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      
+      # Rate Limiting
+      RateLimit__RequestsPerMinute: ${RATE_LIMIT_REQUESTS_PER_MINUTE:-100}
+      RateLimit__RequestsPerHour: ${RATE_LIMIT_REQUESTS_PER_HOUR:-1000}
+      
+      # Feature Flags
+      Features__EnableSwagger: ${ENABLE_SWAGGER:-true}
+      Features__EnableDetailedErrors: ${ENABLE_DETAILED_ERRORS:-true}
+      Features__EnableSensitiveDataLogging: ${ENABLE_SENSITIVE_DATA_LOGGING:-false}
     ports:
-      - "5000:80"
+      - "${BACKEND_PORT:-5000}:80"
+    volumes:
+      - ./backend:/app
+      - backend-logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
       ai-service:
         condition: service_started
+    networks:
+      - codereviewer-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 
   # Next.js Frontend
+
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
+        NEXT_PUBLIC_GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
     container_name: codereviewer-frontend
     environment:
+      # Next.js Configuration
+      NODE_ENV: ${NODE_ENV:-production}
+      
+      # API Configuration
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
+      
+    
       NEXT_PUBLIC_GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      
+     
+      NEXT_PUBLIC_ENABLE_GITHUB_INTEGRATION: ${ENABLE_GITHUB_INTEGRATION:-true}
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
     depends_on:
       - backend
+    networks:
+      - codereviewer-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+
+# Networks
+
+networks:
+  codereviewer-network:
+    driver: bridge
+
+
+# Volumes
 
 volumes:
   postgres_data:
+    driver: local
+  ai-cache:
+    driver: local
+  backend-logs:
     driver: local

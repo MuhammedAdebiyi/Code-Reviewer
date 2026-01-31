@@ -171,9 +171,36 @@ namespace CodeReviewer.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("FailedLoginAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsEmailVerified")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastPasswordResetAttempt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastVerificationAttempt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LockoutUntil")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("PasswordResetAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PasswordResetCode")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("PasswordResetCodeExpiry")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Plan")
                         .IsRequired()
@@ -183,6 +210,15 @@ namespace CodeReviewer.Api.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("VerificationAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("VerificationCode")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("VerificationCodeExpiry")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");

@@ -1,75 +1,88 @@
 namespace CodeReviewer.Api.Models;
 
-// Authentication DTOs
-public record AuthResponse
+// Auth DTOs
+public class AuthResponse
 {
-    public bool Success { get; init; }
-    public string Message { get; init; } = string.Empty;
-    public string? Token { get; init; }
-    public string? RefreshToken { get; init; }
-    public UserDto? User { get; init; }
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string? Token { get; set; }
+    public UserDto? User { get; set; }
+    public bool RequiresVerification { get; set; }
 }
 
-public record UserDto
+public class UserDto
 {
-    public Guid Id { get; init; }
-    public string Email { get; init; } = string.Empty;
-    public string Plan { get; init; } = "free";
-    public int ReviewsRemaining { get; init; }
-    public DateTime CreatedAt { get; init; }
+    public Guid Id { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string Plan { get; set; } = string.Empty;
+    public int ReviewsRemaining { get; set; }
+    public bool IsEmailVerified { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
-// Code Review DTOs
-public record CodeFileDto
+// Review DTOs
+public class ReviewDto
 {
-    public string Path { get; init; } = string.Empty;
-    public string Content { get; init; } = string.Empty;
-    public string? Language { get; init; }
+    public Guid Id { get; set; }
+    public string ProjectName { get; set; } = string.Empty;
+    public string Language { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public int FilesCount { get; set; }
+    public int TotalLines { get; set; }
+    public DateTime StartedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public int GeminiTokensUsed { get; set; }
 }
 
-public record ReviewDto
+public class CodeFileDto
 {
-    public Guid Id { get; init; }
-    public string ProjectName { get; init; } = string.Empty;
-    public string Language { get; init; } = string.Empty;
-    public string Status { get; init; } = string.Empty;
-    public int FilesCount { get; init; }
-    public int TotalLines { get; init; }
-    public DateTime StartedAt { get; init; }
-    public DateTime? CompletedAt { get; init; }
+    public string Path { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public string Language { get; set; } = string.Empty;
 }
 
-public record ReviewResultsResponse
+public class ReviewResultsResponse
 {
-    public Guid ReviewId { get; init; }
-    public string Status { get; init; } = string.Empty;
-    public ReviewSummary Summary { get; init; } = new();
-    public List<IssueDto> Issues { get; init; } = new();
-    public string ArchitectureAnalysis { get; init; } = string.Empty;
-    public int FilesAnalyzed { get; init; }
-    public int TotalLines { get; init; }
+    public Guid ReviewId { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public ReviewSummary Summary { get; set; } = new();
+    public List<FileResult> Files { get; set; } = new();
+    public List<IssueDto> Issues { get; set; } = new();
+    public string ArchitectureAnalysis { get; set; } = string.Empty;
+    public int FilesAnalyzed { get; set; }
+    public int TotalLines { get; set; }
 }
 
-public record ReviewSummary
+public class ReviewSummary
 {
-    public int Total { get; init; }
-    public int Critical { get; init; }
-    public int High { get; init; }
-    public int Medium { get; init; }
-    public int Low { get; init; }
-    public Dictionary<string, int> ByType { get; init; } = new();
+    public int TotalIssues { get; set; }
+    public int Total { get; set; }
+    public int Critical { get; set; }
+    public int High { get; set; }
+    public int Medium { get; set; }
+    public int Low { get; set; }
+    public Dictionary<string, int> ByType { get; set; } = new();
 }
 
-public record IssueDto
+public class FileResult
 {
-    public string Id { get; init; } = string.Empty;
-    public string Type { get; init; } = string.Empty;
-    public string Severity { get; init; } = string.Empty;
-    public string File { get; init; } = string.Empty;
-    public int Line { get; init; }
-    public string Title { get; init; } = string.Empty;
-    public string Description { get; init; } = string.Empty;
-    public string Suggestion { get; init; } = string.Empty;
-    public string Reasoning { get; init; } = string.Empty;
-    public string CodeSnippet { get; init; } = string.Empty;
+    public Guid FileId { get; set; }
+    public string FileName { get; set; } = string.Empty;
+    public List<IssueDto> Issues { get; set; } = new();
+}
+
+public class IssueDto
+{
+    public Guid Id { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public string Severity { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int LineNumber { get; set; }
+    public int Line { get; set; }
+    public string File { get; set; } = string.Empty;
+    public string CodeSnippet { get; set; } = string.Empty;
+    public string Suggestion { get; set; } = string.Empty;
+    public string Reasoning { get; set; } = string.Empty;
+    public string FixExample { get; set; } = string.Empty;
 }
